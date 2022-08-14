@@ -19,6 +19,8 @@ STANDARD_COLOR_DICT = {
     "cyan": curses.COLOR_CYAN
 }
 COLOR_NAMES = ["red", "green", "blue", "cyan", "magenta", "yellow", "white"]
+SPEED_LIST = [0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.05, 0.08, 0.1]
+DEFAULT_SPEED = 5
 
 
 class Cell:
@@ -74,6 +76,7 @@ def curses_main(screen, args: argparse.Namespace):
     width = curses.COLS
     set_color(args.color)
     cell_list = []
+    speed = SPEED_LIST[args.speed]
 
     run = True
     while run:
@@ -93,13 +96,35 @@ def curses_main(screen, args: argparse.Namespace):
         elif ch == 99:  # c
             args.color = next_color(args.color)
             set_color(args.color)
-        time.sleep(0.02)
+        elif 48 <= ch <= 57:  # number keys 0 to 9
+            speed = SPEED_LIST[int(chr(ch))]
+        time.sleep(speed)
+
+
+def positive_int_zero_to_nine(value: str) -> int:
+    """
+    Used with argparse.
+    Checks to see if value is positive int between 0 and 10.
+    """
+    msg = f"{value} is an invalid positive int value 0 to 9"
+    try:
+        int_value = int(value)
+        if int_value < 0 or int_value >= 10:
+            raise argparse.ArgumentTypeError(msg)
+        return int_value
+    except ValueError:
+        raise argparse.ArgumentTypeError(msg)
 
 
 def argument_parser() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--color", default="white",
                         help="Set the color.")
+    parser.add_argument("-s", "--speed",
+                        default=DEFAULT_SPEED,
+                        type=positive_int_zero_to_nine,
+                        help="Set the speed (delay) 0-Fast, 5-Default,"
+                             " 9-Slow")
     return parser.parse_args()
 
 
