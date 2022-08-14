@@ -91,7 +91,9 @@ def curses_main(screen, args: argparse.Namespace):
         new = [Cell(screen, x + 1, height) for x in range(width - 2)]
         cell_list.extend(new)
         ch = screen.getch()
-        if ch in [81, 113]:  # q, Q
+        if ch != -1 and args.screensaver:
+            run = False
+        elif ch in [81, 113]:  # q, Q
             run = False
         elif ch == 99:  # c
             args.color = next_color(args.color)
@@ -125,6 +127,8 @@ def argument_parser() -> argparse.Namespace:
                         type=positive_int_zero_to_nine,
                         help="Set the speed (delay) 0-Fast, 5-Default,"
                              " 9-Slow")
+    parser.add_argument("--screensaver", action="store_true",
+                        help="Screensaver mode. Any key will exit.")
     return parser.parse_args()
 
 
