@@ -1,8 +1,24 @@
+import argparse
 import curses
 import random
 import time
 
-WHITE = [15, 255, 252, 250, 248, 246, 244, 242, 240, 238, 237]
+COLOR_DICT = {
+    "white": [255, 252, 250, 248, 246, 244, 242, 240, 238, 237],
+    "red": [196, 196, 160, 160, 124, 124, 88, 88, 52, 52],
+    "green": [46, 40, 40, 34, 34, 28, 28, 22, 22, 22],
+    "blue": [21, 20, 20, 19, 19, 18, 18, 17, 17, 17],
+    "yellow": [190, 154, 154, 148, 148, 148, 58, 58, 58, 58],
+    "magenta": [164, 164, 127, 127, 127, 90, 90, 90, 53, 53],
+    "cyan": [39, 38, 38, 38, 37, 37, 30, 30, 23, 23],
+}
+STANDARD_COLOR_DICT = {
+    "white": curses.COLOR_WHITE, "red": curses.COLOR_RED,
+    "green": curses.COLOR_GREEN, "blue": curses.COLOR_BLUE,
+    "yellow": curses.COLOR_YELLOW, "magenta": curses.COLOR_MAGENTA,
+    "cyan": curses.COLOR_CYAN
+}
+COLOR_NAMES = ["red", "green", "blue", "cyan", "magenta", "yellow", "white"]
 
 
 class Cell:
@@ -20,7 +36,7 @@ class Cell:
         # return True - remove, False - do not remove
         if self.y <= self.max_height:
             return True
-        if self.y <= self.height - 4 and self.brightness < 11:
+        if self.y <= self.height - 4 and self.brightness < 10:
             self.brightness += 1
         self.y -= 1
         self.screen.addstr(
@@ -31,21 +47,32 @@ class Cell:
         return False
 
 
-def set_color() -> None:
-    if curses.COLORS < 255:
-        for i in range(len(WHITE)):
-            curses.init_pair(i + 1, curses.COLOR_WHITE, curses.COLOR_BLACK)
+def next_color(current_color: str) -> str:
+    index = COLOR_NAMES.index(current_color)
+    if index >= len(COLOR_NAMES) - 1:
+        index = 0
     else:
-        for i, c in enumerate(WHITE):
+        index += 1
+    return COLOR_NAMES[index]
+
+
+def set_color(color: str) -> None:
+    if curses.COLORS < 255:
+        for i in range(len(COLOR_DICT[color])):
+            curses.init_pair(i + 1,
+                             STANDARD_COLOR_DICT[color],
+                             curses.COLOR_BLACK)
+    else:
+        for i, c in enumerate(COLOR_DICT[color]):
             curses.init_pair(i + 1, c, curses.COLOR_BLACK)
 
 
-def curses_main(screen):
+def curses_main(screen, args: argparse.Namespace):
     curses.curs_set(0)  # Set the cursor to off.
     screen.timeout(0)  # Turn blocking off for screen.getch().
     height = curses.LINES
     width = curses.COLS
-    set_color()
+    set_color(args.color)
     cell_list = []
 
     run = True
@@ -63,11 +90,22 @@ def curses_main(screen):
         ch = screen.getch()
         if ch in [81, 113]:  # q, Q
             run = False
+        elif ch == 99:  # c
+            args.color = next_color(args.color)
+            set_color(args.color)
         time.sleep(0.02)
 
 
+def argument_parser() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--color", default="white",
+                        help="Set the color.")
+    return parser.parse_args()
+
+
 def main():
-    curses.wrapper(curses_main)
+    args = argument_parser()
+    curses.wrapper(curses_main, args)
 
 
 if __name__ == "__main__":
