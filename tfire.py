@@ -8,7 +8,7 @@ COLOR_DICT = {
     "red": [196, 196, 160, 160, 124, 124, 88, 88, 52, 52],
     "green": [46, 40, 40, 34, 34, 28, 28, 22, 22, 22],
     "blue": [21, 20, 20, 19, 19, 18, 18, 17, 17, 17],
-    "yellow": [190, 154, 154, 148, 148, 148, 58, 58, 58, 58],
+    "yellow": [154, 190, 190, 148, 149, 101, 58, 58, 58, 58],
     "magenta": [164, 164, 127, 127, 127, 90, 90, 90, 53, 53],
     "cyan": [39, 38, 38, 38, 37, 37, 30, 30, 23, 23],
 }
@@ -29,10 +29,13 @@ class Cell:
         self.y = height - 1
         self.x = start_x
         self.height = height
-        self.max_height = random.randint(height - 16, height - 4)
+        self.max_height = random.choices(
+            [(height - x) for x in range(2, 15)],
+            [5, 10, 25, 7, 10, 12, 9, 20, 12, 10, 5, 2, 4]
+        )[0]
         self.char = "X"
+        self.base_char = "#"
         self.brightness = 1
-        self.max_height -= random.choice([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 8])
 
     def process(self) -> bool:
         # return True - remove, False - do not remove
@@ -41,10 +44,14 @@ class Cell:
         if self.y <= self.height - 4 and self.brightness < 10:
             self.brightness += 1
         self.y -= 1
+        if self.y <= self.height - 3:
+            char = self.char
+        else:
+            char = self.base_char
         self.screen.addstr(
             self.y,
             self.x,
-            self.char,
+            char,
             curses.color_pair(self.brightness))
         return False
 
