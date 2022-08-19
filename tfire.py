@@ -21,6 +21,11 @@ STANDARD_COLOR_DICT = {
 COLOR_NAMES = ["red", "green", "blue", "cyan", "magenta", "yellow", "white"]
 SPEED_LIST = [0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.05, 0.08, 0.1]
 DEFAULT_SPEED = 5
+MIN_HEIGHT = 16
+
+
+class TFireError(Exception):
+    pass
 
 
 class Cell:
@@ -81,6 +86,8 @@ def curses_main(screen, args: argparse.Namespace):
     screen.timeout(0)  # Turn blocking off for screen.getch().
     height = curses.LINES
     width = curses.COLS
+    if height <= MIN_HEIGHT:
+        raise TFireError("Screen height is too short.")
     set_color(args.color)
     cell_list = []
     speed = SPEED_LIST[args.speed]
@@ -98,6 +105,14 @@ def curses_main(screen, args: argparse.Namespace):
         new = [Cell(screen, x + 1, height) for x in range(width - 2)]
         cell_list.extend(new)
         ch = screen.getch()
+        if ch == curses.KEY_RESIZE:
+            curses.update_lines_cols()
+            height = curses.LINES
+            if height <= MIN_HEIGHT:
+                raise TFireError("Error screen/window height is too short.")
+            if curses.COLS < width:
+                cell_list.clear()
+            width = curses.COLS
         if ch != -1 and args.screensaver:
             run = False
         elif ch in [81, 113]:  # q, Q
@@ -141,7 +156,10 @@ def argument_parser() -> argparse.Namespace:
 
 def main():
     args = argument_parser()
-    curses.wrapper(curses_main, args)
+    try:
+        curses.wrapper(curses_main, args)
+    except TFireError as e:
+        print(e)
 
 
 if __name__ == "__main__":
