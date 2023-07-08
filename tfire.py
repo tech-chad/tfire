@@ -29,7 +29,8 @@ class TFireError(Exception):
 
 
 class Cell:
-    def __init__(self, screen, start_x: int, height: int):
+    def __init__(self, screen, start_x: int, height: int, multi: bool):
+        self.multi = multi
         self.screen = screen
         self.y = height - 1
         self.x = start_x
@@ -41,6 +42,8 @@ class Cell:
         self.char = "X"
         self.base_char = "#"
         self.brightness = 1
+        if multi:
+            self.multi_color_offset = random.choice([0, 10, 20, 30, 40, 50, 60])
 
     def process(self) -> bool:
         # return True - remove, False - do not remove
@@ -53,11 +56,15 @@ class Cell:
             char = self.char
         else:
             char = self.base_char
+        if self.multi:
+            color_number = self.multi_color_offset + self.brightness
+        else:
+            color_number = self.brightness
         self.screen.addstr(
             self.y,
             self.x,
             char,
-            curses.color_pair(self.brightness))
+            curses.color_pair(color_number))
         return False
 
 
@@ -81,6 +88,23 @@ def set_color(color: str) -> None:
             curses.init_pair(i + 1, c, curses.COLOR_BLACK)
 
 
+def setup_colors():
+    if curses.COLORS < 255:
+        offset = 0
+        for color in COLOR_NAMES:
+            for i in range(len(COLOR_DICT[color])):
+                curses.init_pair(offset + i + 1,
+                                 STANDARD_COLOR_DICT[color],
+                                 curses.COLOR_BLACK)
+            offset += 10
+    else:
+        offset = 0
+        for color in COLOR_NAMES:
+            for i, c in enumerate(COLOR_DICT[color]):
+                curses.init_pair(offset + i + 1, c, curses.COLOR_BLACK)
+            offset += 10
+
+
 def curses_main(screen, args: argparse.Namespace):
     curses.curs_set(0)  # Set the cursor to off.
     screen.timeout(0)  # Turn blocking off for screen.getch().
@@ -88,7 +112,10 @@ def curses_main(screen, args: argparse.Namespace):
     width = curses.COLS
     if height <= MIN_HEIGHT:
         raise TFireError("Screen height is too short.")
-    set_color(args.color)
+    if args.multi:
+        setup_colors()
+    else:
+        set_color(args.color)
     cell_list = []
     speed = SPEED_LIST[args.speed]
 
@@ -102,7 +129,7 @@ def curses_main(screen, args: argparse.Namespace):
         screen.refresh()
         for cell in remove_list:
             cell_list.remove(cell)
-        new = [Cell(screen, x + 1, height) for x in range(width - 2)]
+        new = [Cell(screen, x + 1, height, args.multi) for x in range(width - 2)]
         cell_list.extend(new)
         ch = screen.getch()
         if ch == curses.KEY_RESIZE:
@@ -117,7 +144,15 @@ def curses_main(screen, args: argparse.Namespace):
             run = False
         elif ch in [81, 113]:  # q, Q
             run = False
+        elif ch == 109:  # m
+            if args.multi:
+                set_color(args.color)
+                args.multi = False
+            else:
+                setup_colors()
+                args.multi = True
         elif ch == 99:  # c
+            args.multi = False
             args.color = next_color(args.color)
             set_color(args.color)
         elif 48 <= ch <= 57:  # number keys 0 to 9
@@ -149,6 +184,8 @@ def argument_parser() -> argparse.Namespace:
                         type=positive_int_zero_to_nine,
                         help="Set the speed (delay) 0-Fast, 5-Default,"
                              " 9-Slow")
+    parser.add_argument("-m", "--multi", action="store_true",
+                        help="Multi color mode")
     parser.add_argument("--screensaver", action="store_true",
                         help="Screensaver mode. Any key will exit.")
     return parser.parse_args()
