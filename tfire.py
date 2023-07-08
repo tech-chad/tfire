@@ -29,16 +29,29 @@ class TFireError(Exception):
 
 
 class Cell:
-    def __init__(self, screen, start_x: int, height: int, multi: bool):
+    def __init__(self, screen, start_x: int, height: int,
+                 multi: bool, fire_size: str):
         self.multi = multi
+        self.fire_size = fire_size
         self.screen = screen
         self.y = height - 1
         self.x = start_x
         self.height = height
-        self.max_height = random.choices(
-            [(height - x) for x in range(2, 15)],
-            [5, 10, 25, 7, 10, 12, 9, 20, 12, 10, 5, 2, 4]
-        )[0]
+        if self.fire_size == "small":
+            self.max_height = random.choices(
+                [(height - x) for x in range(2, 10)],
+                [5, 10, 25, 7, 10, 5, 2, 5]
+            )[0]
+        elif self.fire_size == "medium":
+            self.max_height = random.choices(
+                [(height - x) for x in range(2, 15)],
+                [5, 10, 25, 7, 10, 12, 9, 20, 12, 10, 5, 2, 4]
+            )[0]
+        elif self.fire_size == "large":
+            self.max_height = random.choices(
+                [(height - x) for x in range(2, 20)],
+                [5, 10, 25, 7, 10, 12, 9, 20, 12, 8, 10, 5, 4, 2, 4, 3, 1, 4]
+            )[0]
         self.char = "X"
         self.base_char = "#"
         self.brightness = 1
@@ -50,7 +63,10 @@ class Cell:
         if self.y <= self.max_height:
             return True
         if self.y <= self.height - 4 and self.brightness < 10:
-            self.brightness += 1
+            if self.fire_size == "small" and self.brightness < 7:
+                self.brightness += 2
+            else:
+                self.brightness += 1
         self.y -= 1
         if self.y <= self.height - 3:
             char = self.char
@@ -129,7 +145,8 @@ def curses_main(screen, args: argparse.Namespace):
         screen.refresh()
         for cell in remove_list:
             cell_list.remove(cell)
-        new = [Cell(screen, x + 1, height, args.multi) for x in range(width - 2)]
+        new = [Cell(screen, x + 1,
+                    height, args.multi, args.fire) for x in range(width - 2)]
         cell_list.extend(new)
         ch = screen.getch()
         if ch == curses.KEY_RESIZE:
@@ -140,6 +157,9 @@ def curses_main(screen, args: argparse.Namespace):
             if curses.COLS < width:
                 cell_list.clear()
             width = curses.COLS
+        time.sleep(speed)
+        if ch == -1:
+            continue
         if ch != -1 and args.screensaver:
             run = False
         elif ch in [81, 113]:  # q, Q
@@ -155,9 +175,15 @@ def curses_main(screen, args: argparse.Namespace):
             args.multi = False
             args.color = next_color(args.color)
             set_color(args.color)
+        elif ch == 102:  # f
+            if args.fire == "small":
+                args.fire = "medium"
+            elif args.fire == "medium":
+                args.fire = "large"
+            else:
+                args.fire = "small"
         elif 48 <= ch <= 57:  # number keys 0 to 9
             speed = SPEED_LIST[int(chr(ch))]
-        time.sleep(speed)
 
 
 def positive_int_zero_to_nine(value: str) -> int:
@@ -186,6 +212,10 @@ def argument_parser() -> argparse.Namespace:
                              " 9-Slow")
     parser.add_argument("-m", "--multi", action="store_true",
                         help="Multi color mode")
+    parser.add_argument("-f", "--fire", type=str,
+                        choices=["small", "medium", "large"],
+                        default="medium",
+                        help="Set the size of the fire. default: medium")
     parser.add_argument("--screensaver", action="store_true",
                         help="Screensaver mode. Any key will exit.")
     return parser.parse_args()
