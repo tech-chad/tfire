@@ -182,6 +182,12 @@ def curses_main(screen, args: argparse.Namespace):
                 args.fire = "large"
             else:
                 args.fire = "small"
+        elif ch == 100:  # d
+            args.fire = "medium"
+            speed = SPEED_LIST[DEFAULT_SPEED]
+            args.multi = False
+            args.color = "white"
+            set_color(args.color)
         elif 48 <= ch <= 57:  # number keys 0 to 9
             speed = SPEED_LIST[int(chr(ch))]
 
