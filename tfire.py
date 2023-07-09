@@ -19,6 +19,10 @@ STANDARD_COLOR_DICT = {
     "cyan": curses.COLOR_CYAN
 }
 COLOR_NAMES = ["red", "green", "blue", "cyan", "magenta", "yellow", "white"]
+BG_COLORS = {"black": curses.COLOR_BLACK, "white": curses.COLOR_WHITE,
+             "red": curses.COLOR_RED, "green": curses.COLOR_GREEN,
+             "blue": curses.COLOR_BLUE, "yellow": curses.COLOR_YELLOW,
+             "magenta": curses.COLOR_MAGENTA, "cyan": curses.COLOR_CYAN}
 SPEED_LIST = [0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.05, 0.08, 0.1]
 DEFAULT_SPEED = 5
 MIN_HEIGHT = 16
@@ -93,31 +97,42 @@ def next_color(current_color: str) -> str:
     return COLOR_NAMES[index]
 
 
-def set_color(color: str) -> None:
+def next_color_bg(current_color: str) -> str:
+    color_list = list(BG_COLORS.keys())
+    index = color_list.index(current_color)
+    if index >= len(color_list) - 1:
+        index = 0
+    else:
+        index += 1
+    return color_list[index]
+
+
+def set_color(color: str, back_ground_color) -> None:
     if curses.COLORS < 255:
         for i in range(len(COLOR_DICT[color])):
             curses.init_pair(i + 1,
                              STANDARD_COLOR_DICT[color],
-                             curses.COLOR_BLACK)
+                             BG_COLORS[back_ground_color])
     else:
         for i, c in enumerate(COLOR_DICT[color]):
-            curses.init_pair(i + 1, c, curses.COLOR_BLACK)
+            curses.init_pair(i + 1, c, BG_COLORS[back_ground_color])
 
 
-def setup_colors():
+def setup_colors(back_ground_color: str):
     if curses.COLORS < 255:
         offset = 0
         for color in COLOR_NAMES:
             for i in range(len(COLOR_DICT[color])):
                 curses.init_pair(offset + i + 1,
                                  STANDARD_COLOR_DICT[color],
-                                 curses.COLOR_BLACK)
+                                 BG_COLORS[back_ground_color])
             offset += 10
     else:
         offset = 0
         for color in COLOR_NAMES:
             for i, c in enumerate(COLOR_DICT[color]):
-                curses.init_pair(offset + i + 1, c, curses.COLOR_BLACK)
+                curses.init_pair(offset + i + 1, c,
+                                 BG_COLORS[back_ground_color])
             offset += 10
 
 
@@ -129,9 +144,10 @@ def curses_main(screen, args: argparse.Namespace):
     if height <= MIN_HEIGHT:
         raise TFireError("Screen height is too short.")
     if args.multi:
-        setup_colors()
+        setup_colors(args.background)
     else:
-        set_color(args.color)
+        set_color(args.color, args.background)
+    screen.bkgd(curses.color_pair(1))
     cell_list = []
     speed = SPEED_LIST[args.speed]
 
@@ -166,15 +182,21 @@ def curses_main(screen, args: argparse.Namespace):
             run = False
         elif ch == 109:  # m
             if args.multi:
-                set_color(args.color)
+                set_color(args.color, args.background)
                 args.multi = False
             else:
-                setup_colors()
+                setup_colors(args.background)
                 args.multi = True
         elif ch == 99:  # c
             args.multi = False
             args.color = next_color(args.color)
-            set_color(args.color)
+            set_color(args.color, args.background)
+        elif ch == 67:  # C
+            args.background = next_color_bg(args.background)
+            if args.multi:
+                setup_colors(args.background)
+            else:
+                set_color(args.color, args.background)
         elif ch == 102:  # f
             if args.fire == "small":
                 args.fire = "medium"
@@ -187,7 +209,8 @@ def curses_main(screen, args: argparse.Namespace):
             speed = SPEED_LIST[DEFAULT_SPEED]
             args.multi = False
             args.color = "white"
-            set_color(args.color)
+            args.background = "black"
+            set_color(args.color, args.background)
         elif 48 <= ch <= 57:  # number keys 0 to 9
             speed = SPEED_LIST[int(chr(ch))]
 
@@ -216,6 +239,8 @@ def argument_parser() -> argparse.Namespace:
                         type=positive_int_zero_to_nine,
                         help="Set the speed (delay) 0-Fast, 5-Default,"
                              " 9-Slow")
+    parser.add_argument("-b", "--background", type=str,
+                        choices=list(BG_COLORS.keys()), default="black")
     parser.add_argument("-m", "--multi", action="store_true",
                         help="Multi color mode")
     parser.add_argument("-f", "--fire", type=str,
