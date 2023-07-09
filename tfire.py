@@ -239,7 +239,7 @@ def argument_parser() -> argparse.Namespace:
                         type=positive_int_zero_to_nine,
                         help="Set the speed (delay) 0-Fast, 5-Default,"
                              " 9-Slow")
-    parser.add_argument("-b", "--background", type=str,
+    parser.add_argument("--background", type=str,
                         choices=list(BG_COLORS.keys()), default="black")
     parser.add_argument("-m", "--multi", action="store_true",
                         help="Multi color mode")
