@@ -62,7 +62,7 @@ class Cell:
         if multi:
             self.multi_color_offset = random.choice([0, 10, 20, 30, 40, 50, 60])
 
-    def process(self) -> bool:
+    def process(self, bold: bool, bold_all: bool) -> bool:
         # return True - remove, False - do not remove
         if self.y <= self.max_height:
             return True
@@ -80,11 +80,18 @@ class Cell:
             color_number = self.multi_color_offset + self.brightness
         else:
             color_number = self.brightness
+        if bold_all:
+            bold = curses.A_BOLD
+        elif bold:
+            randint = random.randint(0, 5)
+            bold = curses.A_BOLD if randint <= 1 else curses.A_NORMAL
+        else:
+            bold = curses.A_NORMAL
         self.screen.addstr(
             self.y,
             self.x,
             char,
-            curses.color_pair(color_number))
+            curses.color_pair(color_number) + bold)
         return False
 
 
@@ -156,7 +163,7 @@ def curses_main(screen, args: argparse.Namespace):
         screen.erase()
         remove_list = []
         for cell in cell_list:
-            if cell.process():
+            if cell.process(args.bold, args.bold_all):
                 remove_list.append(cell)
         screen.refresh()
         for cell in remove_list:
@@ -204,12 +211,17 @@ def curses_main(screen, args: argparse.Namespace):
                 args.fire = "large"
             else:
                 args.fire = "small"
+        elif ch == 98:  # b
+            args.bold = not args.bold
+        elif ch == 66:  # B
+            args.bold_all = not args.bold_all
         elif ch == 100:  # d
             args.fire = "medium"
             speed = SPEED_LIST[DEFAULT_SPEED]
             args.multi = False
             args.color = "white"
             args.background = "black"
+            args.bold = args.bold_all = False
             set_color(args.color, args.background)
         elif 48 <= ch <= 57:  # number keys 0 to 9
             speed = SPEED_LIST[int(chr(ch))]
@@ -239,6 +251,10 @@ def argument_parser() -> argparse.Namespace:
                         type=positive_int_zero_to_nine,
                         help="Set the speed (delay) 0-Fast, 5-Default,"
                              " 9-Slow")
+    parser.add_argument("-b", "--bold", action="store_true",
+                        help="Bold some")
+    parser.add_argument("-B", "--bold_all", action="store_true",
+                        help="Bold all")
     parser.add_argument("--background", type=str,
                         choices=list(BG_COLORS.keys()), default="black")
     parser.add_argument("-m", "--multi", action="store_true",
