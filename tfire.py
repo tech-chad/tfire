@@ -12,6 +12,12 @@ COLOR_DICT = {
     "magenta": [164, 164, 127, 127, 127, 90, 90, 90, 53, 53],
     "cyan": [39, 38, 38, 38, 37, 37, 30, 30, 23, 23],
 }
+REAL_FIRE = [196, 166, 214, 190, 149, 58, 240, 238, 238, 237]
+REAL_FIRE_STANDARD = [curses.COLOR_RED, curses.COLOR_YELLOW, curses.COLOR_YELLOW,
+                      curses.COLOR_YELLOW, curses.COLOR_YELLOW,
+                      curses.COLOR_WHITE, curses.COLOR_WHITE,
+                      curses.COLOR_WHITE, curses.COLOR_WHITE,
+                      curses.COLOR_WHITE]
 STANDARD_COLOR_DICT = {
     "white": curses.COLOR_WHITE, "red": curses.COLOR_RED,
     "green": curses.COLOR_GREEN, "blue": curses.COLOR_BLUE,
@@ -143,6 +149,16 @@ def setup_colors(back_ground_color: str):
             offset += 10
 
 
+def setup_real_fire_colors(back_ground_color: str):
+    if curses.COLORS < 255:
+        pass
+        for i, c in enumerate(REAL_FIRE_STANDARD):
+            curses.init_pair(i + 1, c, BG_COLORS[back_ground_color])
+    else:
+        for i, c in enumerate(REAL_FIRE):
+            curses.init_pair(i + 1, c, BG_COLORS[back_ground_color])
+
+
 def curses_main(screen, args: argparse.Namespace):
     curses.curs_set(0)  # Set the cursor to off.
     screen.timeout(0)  # Turn blocking off for screen.getch().
@@ -157,7 +173,8 @@ def curses_main(screen, args: argparse.Namespace):
     screen.bkgd(curses.color_pair(1))
     cell_list = []
     speed = SPEED_LIST[args.speed]
-
+    if args.real:
+        setup_real_fire_colors(args.background)
     run = True
     while run:
         screen.erase()
@@ -194,8 +211,10 @@ def curses_main(screen, args: argparse.Namespace):
             else:
                 setup_colors(args.background)
                 args.multi = True
+                args.real = False
         elif ch == 99:  # c
             args.multi = False
+            args.real = False
             args.color = next_color(args.color)
             set_color(args.color, args.background)
         elif ch == 67:  # C
@@ -215,12 +234,21 @@ def curses_main(screen, args: argparse.Namespace):
             args.bold = not args.bold
         elif ch == 66:  # B
             args.bold_all = not args.bold_all
+        elif ch == 114:  # r
+            if args.real:
+                set_color(args.color, args.background)
+                args.real = False
+            else:
+                args.real = True
+                args.multi = False
+                setup_real_fire_colors(args.background)
         elif ch == 100:  # d
             args.fire = "medium"
             speed = SPEED_LIST[DEFAULT_SPEED]
             args.multi = False
             args.color = "white"
             args.background = "black"
+            args.real = False
             args.bold = args.bold_all = False
             set_color(args.color, args.background)
         elif 48 <= ch <= 57:  # number keys 0 to 9
@@ -255,6 +283,8 @@ def argument_parser() -> argparse.Namespace:
                         help="Bold some")
     parser.add_argument("-B", "--bold_all", action="store_true",
                         help="Bold all")
+    parser.add_argument("-r", "--real", action="store_true",
+                        help="Real fire mode. Sort of looks like a real fire.")
     parser.add_argument("--background", type=str,
                         choices=list(BG_COLORS.keys()), default="black")
     parser.add_argument("-m", "--multi", action="store_true",
