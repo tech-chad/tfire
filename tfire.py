@@ -250,6 +250,14 @@ def curses_main(screen, args: argparse.Namespace):
             args.real = False
             args.bold = args.bold_all = False
             set_color(args.color, args.background)
+        elif ch == 112:  # p
+            while True:
+                ch = screen.getch()
+                if ch == 112:  # p
+                    break
+                elif ch in [81, 113]:  # q, Q
+                    run = False
+                    break
         elif 48 <= ch <= 57:  # number keys 0 to 9
             speed = SPEED_LIST[int(chr(ch))]
     screen.erase()
