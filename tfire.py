@@ -151,7 +151,6 @@ def setup_colors(back_ground_color: str):
 
 def setup_real_fire_colors(back_ground_color: str):
     if curses.COLORS < 255:
-        pass
         for i, c in enumerate(REAL_FIRE_STANDARD):
             curses.init_pair(i + 1, c, BG_COLORS[back_ground_color])
     else:
