@@ -253,6 +253,8 @@ def curses_main(screen, args: argparse.Namespace):
             set_color(args.color, args.background)
         elif 48 <= ch <= 57:  # number keys 0 to 9
             speed = SPEED_LIST[int(chr(ch))]
+    screen.erase()
+    screen.refresh()
 
 
 def positive_int_zero_to_nine(value: str) -> int:
