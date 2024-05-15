@@ -32,6 +32,11 @@ BG_COLORS = {"black": curses.COLOR_BLACK, "white": curses.COLOR_WHITE,
 SPEED_LIST = [0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.05, 0.08, 0.1]
 DEFAULT_SPEED = 5
 MIN_HEIGHT = 16
+FIRE_CHARACTER_LIST = ["X", "x", "O", "F", "0", ":", ".", "+", "|",
+                       "@", "*", "#"]
+DEFAULT_FIRE_CHARACTER = "X"
+BASE_CHARACTER_LIST = ["#", "=", "@", "-", "+", "X", "W", "0", "M", "V", ""]
+DEFAULT_BASE_CHARACTER = "#"
 
 
 class TFireError(Exception):
@@ -40,7 +45,7 @@ class TFireError(Exception):
 
 class Cell:
     def __init__(self, screen, start_x: int, height: int,
-                 multi: bool, fire_size: str):
+                 multi: bool, fire_size: str, char: str, base_char: str):
         self.multi = multi
         self.fire_size = fire_size
         self.screen = screen
@@ -62,8 +67,8 @@ class Cell:
                 [(height - x) for x in range(2, 20)],
                 [5, 10, 25, 7, 10, 12, 9, 20, 12, 8, 10, 5, 4, 2, 4, 3, 1, 4]
             )[0]
-        self.char = "X"
-        self.base_char = "#"
+        self.char = char
+        self.base_char = base_char
         self.brightness = 1
         if multi:
             self.multi_color_offset = random.choice([0, 10, 20, 30, 40, 50, 60])
@@ -185,7 +190,8 @@ def curses_main(screen, args: argparse.Namespace):
         for cell in remove_list:
             cell_list.remove(cell)
         new = [Cell(screen, x + 1,
-                    height, args.multi, args.fire) for x in range(width - 2)]
+                    height, args.multi, args.fire,
+                    args.char, args.base) for x in range(width - 2)]
         cell_list.extend(new)
         ch = screen.getch()
         if ch == curses.KEY_RESIZE:
@@ -250,6 +256,20 @@ def curses_main(screen, args: argparse.Namespace):
             args.real = False
             args.bold = args.bold_all = False
             set_color(args.color, args.background)
+            args.char = DEFAULT_FIRE_CHARACTER
+            args.base = DEFAULT_BASE_CHARACTER
+        elif ch == 104:  # h
+            current = FIRE_CHARACTER_LIST.index(args.char)
+            if current < len(FIRE_CHARACTER_LIST) - 1:
+                args.char = FIRE_CHARACTER_LIST[current + 1]
+            else:
+                args.char = FIRE_CHARACTER_LIST[0]
+        elif ch == 72:  # H
+            current = BASE_CHARACTER_LIST.index(args.base)
+            if current < len(BASE_CHARACTER_LIST) - 1:
+                args.base = BASE_CHARACTER_LIST[current + 1]
+            else:
+                args.base = BASE_CHARACTER_LIST[0]
         elif ch == 112:  # p
             while True:
                 ch = screen.getch()
@@ -302,6 +322,12 @@ def argument_parser() -> argparse.Namespace:
                         choices=["small", "medium", "large"],
                         default="medium",
                         help="Set the size of the fire. default: medium")
+    parser.add_argument("--char", type=str, default=DEFAULT_FIRE_CHARACTER,
+                        choices=FIRE_CHARACTER_LIST,
+                        help="Set the character used for the fire")
+    parser.add_argument("--base", type=str, default=DEFAULT_BASE_CHARACTER,
+                        choices=BASE_CHARACTER_LIST,
+                        help="set the character used for the base")
     parser.add_argument("--screensaver", action="store_true",
                         help="Screensaver mode. Any key will exit.")
     return parser.parse_args()
@@ -310,6 +336,7 @@ def argument_parser() -> argparse.Namespace:
 def main():
     args = argument_parser()
     try:
+
         curses.wrapper(curses_main, args)
     except TFireError as e:
         print(e)
