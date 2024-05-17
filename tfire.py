@@ -31,7 +31,7 @@ BG_COLORS = {"black": curses.COLOR_BLACK, "white": curses.COLOR_WHITE,
              "magenta": curses.COLOR_MAGENTA, "cyan": curses.COLOR_CYAN}
 SPEED_LIST = [0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.05, 0.08, 0.1]
 DEFAULT_SPEED = 5
-MIN_HEIGHT = 16
+MIN_HEIGHT = 18
 FIRE_CHARACTER_LIST = ["X", "x", "O", "F", "0", ":", ".", "+", "|",
                        "@", "*", "#"]
 DEFAULT_FIRE_CHARACTER = "X"
