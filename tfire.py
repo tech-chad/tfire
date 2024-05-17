@@ -45,13 +45,15 @@ class TFireError(Exception):
 
 class Cell:
     def __init__(self, screen, start_x: int, height: int,
-                 multi: bool, fire_size: str, char: str, base_char: str):
+                 multi: bool, fire_size: str, char: str, base_char: str,
+                 quarter_width: int):
         self.multi = multi
         self.fire_size = fire_size
         self.screen = screen
         self.y = height - 1
         self.x = start_x
         self.height = height
+        self.quarter_width = quarter_width
         if self.fire_size == "small":
             self.max_height = random.choices(
                 [(height - x) for x in range(2, 10)],
@@ -101,6 +103,21 @@ class Cell:
         self.screen.addstr(
             self.y,
             self.x,
+            char,
+            curses.color_pair(color_number) + bold)
+        self.screen.addstr(
+            self.y,
+            self.x + self.quarter_width,
+            char,
+            curses.color_pair(color_number) + bold)
+        self.screen.addstr(
+            self.y,
+            self.x + self.quarter_width * 2,
+            char,
+            curses.color_pair(color_number) + bold)
+        self.screen.addstr(
+            self.y,
+            self.x + self.quarter_width * 3,
             char,
             curses.color_pair(color_number) + bold)
         return False
@@ -168,6 +185,7 @@ def curses_main(screen, args: argparse.Namespace):
     screen.timeout(0)  # Turn blocking off for screen.getch().
     height = curses.LINES
     width = curses.COLS
+    quarter_width = (width - 1) // 4
     if height <= MIN_HEIGHT:
         raise TFireError("Screen height is too short.")
     if args.multi:
@@ -190,8 +208,8 @@ def curses_main(screen, args: argparse.Namespace):
         for cell in remove_list:
             cell_list.remove(cell)
         new = [Cell(screen, x + 1,
-                    height, args.multi, args.fire,
-                    args.char, args.base) for x in range(width - 2)]
+                    height, args.multi, args.fire, args.char,
+                    args.base, quarter_width) for x in range(quarter_width)]
         cell_list.extend(new)
         ch = screen.getch()
         if ch == curses.KEY_RESIZE:
@@ -202,6 +220,7 @@ def curses_main(screen, args: argparse.Namespace):
             if curses.COLS < width:
                 cell_list.clear()
             width = curses.COLS
+            quarter_width = (width - 1) // 4
         time.sleep(speed)
         if ch == -1:
             continue
