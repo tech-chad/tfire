@@ -293,6 +293,23 @@ def curses_main(screen, args: argparse.Namespace):
     screen.refresh()
 
 
+def display_command() -> None:
+    print("tfire running commands:")
+    print("Q or q   Quit")
+    print("m        Toggle multi color mode")
+    print("c        Cycle through the colors")
+    print("C        Cycle through background colors")
+    print("r        Toggle real fire color mode")
+    print("f        Cycle through the 3 different fire sizes")
+    print("b        Toggle bold some of the characters")
+    print("B        Toggle bold all characters")
+    print("h        Cycle through the different characters")
+    print("H        Cycle through the different bass characters")
+    print("p        Pause the fire. Use p again to unpause")
+    print("d        Reset setting to default")
+    print("0 - 9    Speed of the fire  0-fast  5-default  9-slow")
+
+
 def positive_int_zero_to_nine(value: str) -> int:
     """
     Used with argparse.
@@ -339,15 +356,20 @@ def argument_parser() -> argparse.Namespace:
                         help="set the character used for the base")
     parser.add_argument("--screensaver", action="store_true",
                         help="Screensaver mode. Any key will exit.")
+    parser.add_argument("--list_commands", action="store_true",
+                        help="Show list of running commands than exit.")
     return parser.parse_args()
 
 
 def main():
     args = argument_parser()
-    try:
-        curses.wrapper(curses_main, args)
-    except TFireError as e:
-        print(e)
+    if args.list_commands:
+        display_command()
+    else:
+        try:
+            curses.wrapper(curses_main, args)
+        except TFireError as e:
+            print(e)
 
 
 if __name__ == "__main__":
