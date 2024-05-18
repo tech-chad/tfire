@@ -177,6 +177,7 @@ def curses_main(screen, args: argparse.Namespace):
     height = curses.LINES
     width = curses.COLS
     quarter_width = (width - 1) // 4
+    cycle_timer = 1000
     if height <= MIN_HEIGHT:
         raise TFireError("Screen height is too short.")
     if args.multi:
@@ -212,6 +213,13 @@ def curses_main(screen, args: argparse.Namespace):
             width = curses.COLS
             quarter_width = (width - 1) // 4
         time.sleep(speed)
+        if args.cycle_colors:
+            if cycle_timer == 0:
+                args.color = next_color(args.color)
+                set_color(args.color, args.background)
+                cycle_timer = 1000
+            else:
+                cycle_timer -= 1
         if ch == -1:  # if no key is press continue the loop
             continue
         if ch != -1 and args.screensaver:
@@ -226,7 +234,9 @@ def curses_main(screen, args: argparse.Namespace):
                 setup_colors(args.background)
                 args.multi = True
                 args.real = False
+                args.cycle_colors = False
         elif ch == 99:  # c
+            args.cycle_colors = False
             args.multi = False
             args.real = False
             args.color = next_color(args.color)
@@ -255,6 +265,7 @@ def curses_main(screen, args: argparse.Namespace):
             else:
                 args.real = True
                 args.multi = False
+                args.cycle_colors = False
                 setup_real_fire_colors(args.background)
         elif ch == 100:  # d   reset all setting to default
             args.fire = "medium"
@@ -267,6 +278,7 @@ def curses_main(screen, args: argparse.Namespace):
             set_color(args.color, args.background)
             args.char = DEFAULT_FIRE_CHARACTER
             args.base = DEFAULT_BASE_CHARACTER
+            args.cycle_colors = False
         elif ch == 104:  # h
             current = FIRE_CHARACTER_LIST.index(args.char)
             if current < len(FIRE_CHARACTER_LIST) - 1:
@@ -279,6 +291,15 @@ def curses_main(screen, args: argparse.Namespace):
                 args.base = BASE_CHARACTER_LIST[current + 1]
             else:
                 args.base = BASE_CHARACTER_LIST[0]
+        elif ch == 120:  # x
+            if args.cycle_colors:
+                args.cycle_colors = False
+                args.color = "white"
+            else:
+                args.cycle_colors = True
+                cycle_timer = 1000
+                args.color = next_color(args.color)
+            set_color(args.color, args.background)
         elif ch == 112:  # p   pause the fire
             while True:
                 ch = screen.getch()
@@ -300,6 +321,8 @@ def display_command() -> None:
     print("c        Cycle through the colors")
     print("C        Cycle through background colors")
     print("r        Toggle real fire color mode")
+    print("x        Toggle cycle color mode - cycles through "
+          "colors automatically")
     print("f        Cycle through the 3 different fire sizes")
     print("b        Toggle bold some of the characters")
     print("B        Toggle bold all characters")
@@ -334,6 +357,8 @@ def argument_parser() -> argparse.Namespace:
                         type=positive_int_zero_to_nine,
                         help="Set the speed (delay) 0-Fast, 5-Default,"
                              " 9-Slow")
+    parser.add_argument("-x", "--cycle_colors", action="store_true",
+                        help="Cycle colors automatically")
     parser.add_argument("-b", "--bold", action="store_true",
                         help="Bold some")
     parser.add_argument("-B", "--bold_all", action="store_true",
