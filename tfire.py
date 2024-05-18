@@ -13,11 +13,11 @@ COLOR_DICT = {
     "cyan": [39, 38, 38, 38, 37, 37, 30, 30, 23, 23],
 }
 REAL_FIRE = [196, 166, 214, 190, 149, 58, 240, 238, 238, 237]
-REAL_FIRE_STANDARD = [curses.COLOR_RED, curses.COLOR_YELLOW, curses.COLOR_YELLOW,
+REAL_FIRE_STANDARD = [curses.COLOR_RED, curses.COLOR_YELLOW,
                       curses.COLOR_YELLOW, curses.COLOR_YELLOW,
+                      curses.COLOR_YELLOW, curses.COLOR_WHITE,
                       curses.COLOR_WHITE, curses.COLOR_WHITE,
-                      curses.COLOR_WHITE, curses.COLOR_WHITE,
-                      curses.COLOR_WHITE]
+                      curses.COLOR_WHITE, curses.COLOR_WHITE]
 STANDARD_COLOR_DICT = {
     "white": curses.COLOR_WHITE, "red": curses.COLOR_RED,
     "green": curses.COLOR_GREEN, "blue": curses.COLOR_BLUE,
@@ -25,6 +25,7 @@ STANDARD_COLOR_DICT = {
     "cyan": curses.COLOR_CYAN
 }
 COLOR_NAMES = ["red", "green", "blue", "cyan", "magenta", "yellow", "white"]
+LEN_COLOR_NAME = len(COLOR_NAMES)
 BG_COLORS = {"black": curses.COLOR_BLACK, "white": curses.COLOR_WHITE,
              "red": curses.COLOR_RED, "green": curses.COLOR_GREEN,
              "blue": curses.COLOR_BLUE, "yellow": curses.COLOR_YELLOW,
@@ -85,10 +86,7 @@ class Cell:
             else:
                 self.brightness += 1
         self.y -= 1
-        if self.y <= self.height - 3:
-            char = self.char
-        else:
-            char = self.base_char
+        char = self.char if self.y <= self.height - 3 else self.base_char
         if self.multi:
             color_number = self.multi_color_offset + self.brightness
         else:
@@ -125,59 +123,52 @@ class Cell:
 
 def next_color(current_color: str) -> str:
     index = COLOR_NAMES.index(current_color)
-    if index >= len(COLOR_NAMES) - 1:
-        index = 0
-    else:
-        index += 1
+    index = 0 if index >= LEN_COLOR_NAME - 1 else index + 1
     return COLOR_NAMES[index]
 
 
 def next_color_bg(current_color: str) -> str:
     color_list = list(BG_COLORS.keys())
     index = color_list.index(current_color)
-    if index >= len(color_list) - 1:
-        index = 0
-    else:
-        index += 1
+    index = 0 if index >= len(color_list) - 1 else index + 1
     return color_list[index]
 
 
 def set_color(color: str, back_ground_color) -> None:
     if curses.COLORS < 255:
-        for i in range(len(COLOR_DICT[color])):
-            curses.init_pair(i + 1,
-                             STANDARD_COLOR_DICT[color],
-                             BG_COLORS[back_ground_color])
+        [curses.init_pair(i + 1, STANDARD_COLOR_DICT[color],
+         BG_COLORS[back_ground_color]) for i in range(len(COLOR_DICT[color]))]
+
     else:
-        for i, c in enumerate(COLOR_DICT[color]):
-            curses.init_pair(i + 1, c, BG_COLORS[back_ground_color])
+        [curses.init_pair(i + 1, c, BG_COLORS[back_ground_color])
+         for i, c in enumerate(COLOR_DICT[color])]
 
 
 def setup_colors(back_ground_color: str):
     if curses.COLORS < 255:
         offset = 0
         for color in COLOR_NAMES:
-            for i in range(len(COLOR_DICT[color])):
-                curses.init_pair(offset + i + 1,
-                                 STANDARD_COLOR_DICT[color],
-                                 BG_COLORS[back_ground_color])
+            [curses.init_pair(offset + i + 1, STANDARD_COLOR_DICT[color],
+                              BG_COLORS[back_ground_color])
+             for i in range(len(COLOR_DICT[color]))]
+
             offset += 10
     else:
         offset = 0
         for color in COLOR_NAMES:
-            for i, c in enumerate(COLOR_DICT[color]):
-                curses.init_pair(offset + i + 1, c,
-                                 BG_COLORS[back_ground_color])
+            [curses.init_pair(offset + i + 1, c, BG_COLORS[back_ground_color])
+             for i, c in enumerate(COLOR_DICT[color])]
+
             offset += 10
 
 
 def setup_real_fire_colors(back_ground_color: str):
     if curses.COLORS < 255:
-        for i, c in enumerate(REAL_FIRE_STANDARD):
-            curses.init_pair(i + 1, c, BG_COLORS[back_ground_color])
+        [curses.init_pair(i + 1, c, BG_COLORS[back_ground_color])
+         for i, c in enumerate(REAL_FIRE_STANDARD)]
     else:
-        for i, c in enumerate(REAL_FIRE):
-            curses.init_pair(i + 1, c, BG_COLORS[back_ground_color])
+        [curses.init_pair(i + 1, c, BG_COLORS[back_ground_color])
+         for i, c in enumerate(REAL_FIRE)]
 
 
 def curses_main(screen, args: argparse.Namespace):
@@ -193,10 +184,10 @@ def curses_main(screen, args: argparse.Namespace):
     else:
         set_color(args.color, args.background)
     screen.bkgd(curses.color_pair(1))
-    cell_list = []
     speed = SPEED_LIST[args.speed]
     if args.real:
         setup_real_fire_colors(args.background)
+    cell_list = []
     run = True
     while run:
         screen.erase()
@@ -205,8 +196,7 @@ def curses_main(screen, args: argparse.Namespace):
             if cell.process(args.bold, args.bold_all):
                 remove_list.append(cell)
         screen.refresh()
-        for cell in remove_list:
-            cell_list.remove(cell)
+        [cell_list.remove(cell) for cell in remove_list]
         new = [Cell(screen, x + 1,
                     height, args.multi, args.fire, args.char,
                     args.base, quarter_width) for x in range(quarter_width)]
@@ -222,7 +212,7 @@ def curses_main(screen, args: argparse.Namespace):
             width = curses.COLS
             quarter_width = (width - 1) // 4
         time.sleep(speed)
-        if ch == -1:
+        if ch == -1:  # if no key is press continue the loop
             continue
         if ch != -1 and args.screensaver:
             run = False
@@ -247,7 +237,7 @@ def curses_main(screen, args: argparse.Namespace):
                 setup_colors(args.background)
             else:
                 set_color(args.color, args.background)
-        elif ch == 102:  # f
+        elif ch == 102:  # f   set size of the fire
             if args.fire == "small":
                 args.fire = "medium"
             elif args.fire == "medium":
@@ -258,7 +248,7 @@ def curses_main(screen, args: argparse.Namespace):
             args.bold = not args.bold
         elif ch == 66:  # B
             args.bold_all = not args.bold_all
-        elif ch == 114:  # r
+        elif ch == 114:  # r  toggle real fire
             if args.real:
                 set_color(args.color, args.background)
                 args.real = False
@@ -266,7 +256,7 @@ def curses_main(screen, args: argparse.Namespace):
                 args.real = True
                 args.multi = False
                 setup_real_fire_colors(args.background)
-        elif ch == 100:  # d
+        elif ch == 100:  # d   reset all setting to default
             args.fire = "medium"
             speed = SPEED_LIST[DEFAULT_SPEED]
             args.multi = False
@@ -289,7 +279,7 @@ def curses_main(screen, args: argparse.Namespace):
                 args.base = BASE_CHARACTER_LIST[current + 1]
             else:
                 args.base = BASE_CHARACTER_LIST[0]
-        elif ch == 112:  # p
+        elif ch == 112:  # p   pause the fire
             while True:
                 ch = screen.getch()
                 if ch == 112:  # p
@@ -355,7 +345,6 @@ def argument_parser() -> argparse.Namespace:
 def main():
     args = argument_parser()
     try:
-
         curses.wrapper(curses_main, args)
     except TFireError as e:
         print(e)
