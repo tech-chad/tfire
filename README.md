@@ -15,6 +15,10 @@ Fire simulation in the terminal using python and curses
 - **<kbd>b</kbd>** Bold some.
 - **<kbd>B</kbd>** Bold all.
 - **<kbd>d</kbd>** Default. Reset all setting back to default.
+- **<kbd>h</kbd>** Cycle through the fire characters
+- **<kbd>H</kbd>** Cycle through the base characters
+- **<kbd>p</kbd>** Pause and un pause the fire
+- **<kbd>x</kbd>** Toggle cycle through colors automatically
 - **<kbd>0 - 9</kbd>** Change the speed 0-Fast, 5-Default, 9-Slow
 
 ### Screenshot
